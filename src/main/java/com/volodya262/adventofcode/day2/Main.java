@@ -9,7 +9,7 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		var gameConfiguration = new GameConfiguration(12, 13, 14);
 
-		try (var resource = Main.class.getResourceAsStream("/input.txt")) {
+		try (var resource = Main.class.getResourceAsStream("/day2/input.txt")) {
 			assert resource != null;
 			var resourceAsString = new String(resource.readAllBytes());
 
