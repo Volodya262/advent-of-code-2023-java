@@ -5,217 +5,228 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import com.volodya262.adventofcode.utils.ResourceReader;
 import com.volodya262.adventofcode.utils.StringUtils;
 
 public class Main {
-	public static void main(String[] args) throws IOException {
-		var lines = ResourceReader.readLines("/day3/input.txt");
-		var charsMatrix = StringUtils.toCharArray(lines);
-		var adjacentPartNumbers = findAdjacentPartNumbers(lines, charsMatrix);
+    public static void main(String[] args) throws IOException {
+        var lines = ResourceReader.readLines("/day3/input.txt");
+//        var lines = ResourceReader.readLines("/day3/example.txt");
+        var charsMatrix = StringUtils.toCharArray(lines);
+        var adjacentPartNumbers = findAdjacentPartNumbers(lines, charsMatrix);
 
-		var sum = adjacentPartNumbers.stream()
-				.mapToInt(PartNumber::number)
-				.sum();
+        var sum = adjacentPartNumbers.stream()
+                .mapToInt(PartNumber::number)
+                .sum();
 
-		System.out.println(sum);
-	}
+        var gearRatios = findGearRatios(charsMatrix);
 
-	private static List<GearRatio> findGearRatios(char[][] charsMatrix) {
-		var gearRatios = new ArrayList<GearRatio>();
+        var multiplicationSum = gearRatios.stream()
+                .mapToInt(GearRatio::getMultiplication)
+                .sum();
 
-		for (int i = 0; i < charsMatrix.length; ++i) {
-			for (int j = 0; j < charsMatrix[i].length; ++j) {
-				if (charsMatrix[i][j] == '*') {
-					// this is a potential gear ratio
-					var gearRatio = tryCreateGearRatio(charsMatrix, i, j);
-					if (gearRatio != null) {
-						gearRatios.add(gearRatio);
-					}
-				}
-			}
-		}
+        System.out.println(sum);
+        System.out.println(multiplicationSum);
+    }
 
-		return gearRatios;
-	}
+    private static List<GearRatio> findGearRatios(char[][] charsMatrix) {
+        var gearRatios = new ArrayList<GearRatio>();
 
-	private static List<PartNumber> findAdjacentPartNumbers(List<String> lines, char[][] charsMatrix) {
-		var adjacentPartNumbers = new ArrayList<PartNumber>();
+        for (int i = 0; i < charsMatrix.length; ++i) {
+            for (int j = 0; j < charsMatrix[i].length; ++j) {
+                if (charsMatrix[i][j] == '*') {
+                    // this is a potential gear ratio
+                    var gearRatio = tryCreateGearRatio(charsMatrix, i, j);
+                    if (gearRatio != null) {
+                        gearRatios.add(gearRatio);
+                    }
+                }
+            }
+        }
 
-		for (int i = 0; i < lines.size(); ++i) {
-			var partNumbersInLine = findPartNumbers(i, lines.get(i));
+        return gearRatios;
+    }
 
-			var adjacentPartNumbersInLine = partNumbersInLine.stream()
-					.filter(partNumber -> isAdjacentForPartNumber(
-							charsMatrix, partNumber.i(), partNumber.jStart(), partNumber.jEnd()
-					)).toList();
+    private static List<PartNumber> findAdjacentPartNumbers(List<String> lines, char[][] charsMatrix) {
+        var adjacentPartNumbers = new ArrayList<PartNumber>();
 
-			adjacentPartNumbers.addAll(adjacentPartNumbersInLine);
-		}
+        for (int i = 0; i < lines.size(); ++i) {
+            var partNumbersInLine = findPartNumbers(i, lines.get(i));
 
-		return adjacentPartNumbers;
-	}
+            var adjacentPartNumbersInLine = partNumbersInLine.stream()
+                    .filter(partNumber -> isAdjacentForPartNumber(
+                            charsMatrix, partNumber.i(), partNumber.jStart(), partNumber.jEnd()
+                    )).toList();
 
-	private final static Pattern partNumberPattern = Pattern.compile("(\\d+)");
+            adjacentPartNumbers.addAll(adjacentPartNumbersInLine);
+        }
 
-	public static List<PartNumber> findPartNumbers(int lineIndex, String line) {
-		var matcher = partNumberPattern.matcher(line);
-		var partNumbers = new ArrayList<PartNumber>();
-		while (matcher.find()) {
-			var number = matcher.group();
-			var jStart = matcher.start();
-			var jEnd = matcher.end() - 1;
+        return adjacentPartNumbers;
+    }
 
-			partNumbers.add(PartNumber.of(number, lineIndex, jStart, jEnd));
-		}
+    private final static Pattern partNumberPattern = Pattern.compile("(\\d+)");
 
-		return partNumbers;
-	}
+    public static List<PartNumber> findPartNumbers(int lineIndex, String line) {
+        var matcher = partNumberPattern.matcher(line);
+        var partNumbers = new ArrayList<PartNumber>();
+        while (matcher.find()) {
+            var number = matcher.group();
+            var jStart = matcher.start();
+            var jEnd = matcher.end() - 1;
 
-	public record GearRatio(int i, int j, int value1, int value2) {
+            partNumbers.add(PartNumber.of(number, lineIndex, jStart, jEnd));
+        }
 
-	}
+        return partNumbers;
+    }
 
-	public record GearRatioNumber(int value, int i, int jStart, int jEnd) {
+    public record GearRatio(int i, int j, int value1, int value2) {
+        public int getMultiplication() {
+            return value1 * value2;
+        }
+    }
 
-	}
+    public record GearRatioNumber(int value, int i, int jStart, int jEnd) {
 
-	private record Offset(int i, int j) {
-	}
+    }
 
-	private static final Offset[] offsets = new Offset[]{
-			new Offset(0, -1), // left
-			new Offset(-1, -1), // top-left
-			new Offset(-1, 0), // top
-			new Offset(-1, 1), // top-right
-			new Offset(0, 1), // right
-			new Offset(1, 1), // bottom-right
-			new Offset(1, 0), // bottom
-			new Offset(1, -1) // bottom-left
-	};
+    private record Offset(int i, int j) {
+    }
 
-	public static boolean isAdjacentForPartNumber(char[][] charsMatrix, int i, int jStart, int jEnd) {
-		return isAdjacent(charsMatrix, i, jStart, jEnd, Main::isAdjacentPartNumberSymbol);
-	}
+    private static final Offset[] offsets = new Offset[]{
+            new Offset(0, -1), // left
+            new Offset(-1, -1), // top-left
+            new Offset(-1, 0), // top
+            new Offset(-1, 1), // top-right
+            new Offset(0, 1), // right
+            new Offset(1, 1), // bottom-right
+            new Offset(1, 0), // bottom
+            new Offset(1, -1) // bottom-left
+    };
 
-	public static boolean isAdjacent(char[][] charsMatrix, int i, int jStart, int jEnd, Predicate<Character> isSymbol) {
-		for (int j = jStart; j <= jEnd; j++) {
-			for (Offset offset : offsets) {
-				var iWithOffset = i + offset.i;
-				var jWithOffset = j + offset.j;
+    public static boolean isAdjacentForPartNumber(char[][] charsMatrix, int i, int jStart, int jEnd) {
+        return isAdjacent(charsMatrix, i, jStart, jEnd, Main::isAdjacentPartNumberSymbol);
+    }
 
-				if (iWithOffset >= 0 && iWithOffset < charsMatrix.length
-					&& jWithOffset >= 0 && jWithOffset < charsMatrix[iWithOffset].length) {
-					var isAdjacent = isSymbol.test(charsMatrix[iWithOffset][jWithOffset]);
+    public static boolean isAdjacent(char[][] charsMatrix, int i, int jStart, int jEnd, Predicate<Character> isSymbol) {
+        for (int j = jStart; j <= jEnd; j++) {
+            for (Offset offset : offsets) {
+                var iWithOffset = i + offset.i;
+                var jWithOffset = j + offset.j;
 
-					if (isAdjacent) {
-						return true;
-					}
-				}
-			}
-		}
+                if (iWithOffset >= 0 && iWithOffset < charsMatrix.length
+                        && jWithOffset >= 0 && jWithOffset < charsMatrix[iWithOffset].length) {
+                    var isAdjacent = isSymbol.test(charsMatrix[iWithOffset][jWithOffset]);
 
-		return false;
-	}
+                    if (isAdjacent) {
+                        return true;
+                    }
+                }
+            }
+        }
 
-	private final static Set<Character> excludedSymbolsSet = Set.of(
-			'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.'
-	);
+        return false;
+    }
 
-	public static boolean isAdjacentPartNumberSymbol(char c) {
-		return !excludedSymbolsSet.contains(c);
-	}
+    private final static Set<Character> excludedSymbolsSet = Set.of(
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.'
+    );
 
-	public static boolean isDigit(char c) {
-		return c >= '0' && c <= '9';
-	}
+    public static boolean isAdjacentPartNumberSymbol(char c) {
+        return !excludedSymbolsSet.contains(c);
+    }
 
-	public static GearRatio tryCreateGearRatio(char[][] charsMatrix, int i, int j) {
-		var adjacentGearRatioNumbers = new ArrayList<GearRatioNumber>();
-		for (Offset offset : offsets) {
-			var iWithOffset = i + offset.i;
-			var jWithOffset = j + offset.j;
+    public static boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
+    }
 
-			if (iWithOffset >= 0 && iWithOffset < charsMatrix.length
-				&& jWithOffset >= 0 && jWithOffset < charsMatrix[iWithOffset].length) {
-				if (!isDigit(charsMatrix[iWithOffset][jWithOffset])) {
-					continue;
-				}
+    public static GearRatio tryCreateGearRatio(char[][] charsMatrix, int i, int j) {
+        var adjacentGearRatioNumbers = new ArrayList<GearRatioNumber>();
+        for (Offset offset : offsets) {
+            var iWithOffset = i + offset.i;
+            var jWithOffset = j + offset.j;
 
-				var gearRatioNumber = resolveGearRatioNumberFromSymbol(charsMatrix, iWithOffset, jWithOffset);
-				adjacentGearRatioNumbers.add(gearRatioNumber);
-			}
-		}
+            if (iWithOffset >= 0 && iWithOffset < charsMatrix.length
+                    && jWithOffset >= 0 && jWithOffset < charsMatrix[iWithOffset].length) {
+                if (!isDigit(charsMatrix[iWithOffset][jWithOffset])) {
+                    continue;
+                }
 
-		var uniqueGearRatioNumbers = adjacentGearRatioNumbers.stream().distinct().toList();
+                var gearRatioNumber = resolveGearRatioNumberFromSymbol(charsMatrix, iWithOffset, jWithOffset);
+                adjacentGearRatioNumbers.add(gearRatioNumber);
+            }
+        }
 
-		if (uniqueGearRatioNumbers.size() != 2) {
-			return null;
-		}
+        var uniqueGearRatioNumbers = adjacentGearRatioNumbers.stream().distinct().toList();
 
-		return new GearRatio(i, j, adjacentGearRatioNumbers.get(0).value, adjacentGearRatioNumbers.get(1).value);
-	}
+        if (uniqueGearRatioNumbers.size() != 2) {
+            return null;
+        }
 
-	private static class GearRatioNumberBuilder {
-		private final int i;
-		private final char centerChar;
-		private int minJ;
-		private int maxJ;
-		private final List<Character> charsLeft = new ArrayList<>();
-		private final List<Character> charsRight = new ArrayList<>();
+        return new GearRatio(i, j, adjacentGearRatioNumbers.get(0).value, adjacentGearRatioNumbers.get(1).value);
+    }
 
-		public GearRatioNumberBuilder(char centerChar, int i, int j) {
-			this.i = i;
-			this.minJ = j;
-			this.maxJ = j;
-			this.centerChar = centerChar;
-		}
+    private static class GearRatioNumberBuilder {
+        private final int i;
+        private final char centerChar;
+        private int minJ;
+        private int maxJ;
+        private final List<Character> charsLeft = new ArrayList<>();
+        private final List<Character> charsRight = new ArrayList<>();
 
-		public void addCharLeft(char c, int j) {
-			charsLeft.add(c);
-			minJ = Math.min(minJ, j);
-			maxJ = Math.max(maxJ, j);
-		}
+        public GearRatioNumberBuilder(char centerChar, int i, int j) {
+            this.i = i;
+            this.minJ = j;
+            this.maxJ = j;
+            this.centerChar = centerChar;
+        }
 
-		public void addCharRight(char c, int j) {
-			charsRight.add(c);
-			minJ = Math.min(minJ, j);
-			maxJ = Math.max(maxJ, j);
-		}
+        public void addCharLeft(char c, int j) {
+            charsLeft.add(c);
+            minJ = Math.min(minJ, j);
+            maxJ = Math.max(maxJ, j);
+        }
 
-		public GearRatioNumber build() {
-			var allChars = new ArrayList<Character>(charsLeft);
-			allChars.add(centerChar);
-			allChars.addAll(charsRight);
+        public void addCharRight(char c, int j) {
+            charsRight.add(c);
+            minJ = Math.min(minJ, j);
+            maxJ = Math.max(maxJ, j);
+        }
 
-			var numberAsString = allChars.stream().map(String::valueOf).collect(Collectors.joining());
-			return new GearRatioNumber(Integer.parseInt(numberAsString), i, minJ, maxJ);
-		}
-	}
+        public GearRatioNumber build() {
+            var allChars = new ArrayList<Character>(charsLeft.reversed());
+            allChars.add(centerChar);
+            allChars.addAll(charsRight);
 
-	public static GearRatioNumber resolveGearRatioNumberFromSymbol(char[][] charsMatrix, int charI, int charJ) {
-		if (!isDigit(charsMatrix[charI][charJ])) {
-			throw new IllegalArgumentException("Not a digit");
-		}
+            var numberAsString = allChars.stream().map(String::valueOf).collect(Collectors.joining());
+            return new GearRatioNumber(Integer.parseInt(numberAsString), i, minJ, maxJ);
+        }
+    }
 
-		var builder = new GearRatioNumberBuilder(charsMatrix[charI][charJ], charI, charJ);
+    public static GearRatioNumber resolveGearRatioNumberFromSymbol(char[][] charsMatrix, int charI, int charJ) {
+        if (!isDigit(charsMatrix[charI][charJ])) {
+            throw new IllegalArgumentException("Not a digit");
+        }
 
-		for (int j = charJ - 1; j > 0; j--) {
-			if (isDigit(charsMatrix[charI][charJ])) {
-				builder.addCharLeft(charsMatrix[charI][charJ], j);
-			} else {
-				break;
-			}
-		}
+        var builder = new GearRatioNumberBuilder(charsMatrix[charI][charJ], charI, charJ);
 
-		for (int j = charJ + 1; j < charsMatrix[charI].length; j++) {
-			if (isDigit(charsMatrix[charI][charJ])) {
-				builder.addCharRight(charsMatrix[charI][charJ], j);
-			} else {
-				break;
-			}
-		}
+        for (int j = charJ - 1; j >= 0; j--) {
+            if (isDigit(charsMatrix[charI][j])) {
+                builder.addCharLeft(charsMatrix[charI][j], j);
+            } else {
+                break;
+            }
+        }
 
-		return builder.build();
-	}
+        for (int j = charJ + 1; j < charsMatrix[charI].length; j++) {
+            if (isDigit(charsMatrix[charI][j])) {
+                builder.addCharRight(charsMatrix[charI][j], j);
+            } else {
+                break;
+            }
+        }
+
+        return builder.build();
+    }
 }
